@@ -29,8 +29,13 @@ class Sitemap implements Responsable
             $tag = Url::create($tag);
         }
 
-        if (! in_array($tag, $this->tags)) {
+        if (! $this->hasUrl($tag->url)) {
             $this->tags[] = $tag;
+        } else {
+            $oldTag = $this->getUrl($tag->url);
+            if ($tag->isNewer($oldTag)) {
+                $this->update($oldTag, $tag);
+            }
         }
 
         return $this;
@@ -41,6 +46,24 @@ class Sitemap implements Responsable
         return $this->tags;
     }
 
+    /**
+     * @param Url $oldTag
+     * @param Url $newTag
+     *
+     * @return $this
+     */
+    public function update(Url $oldTag, Url $newTag)
+    {
+        array_splice($this->tags, array_search($oldTag, $this->tags), 1, [$newTag]);
+
+        return $this;
+    }
+
+    /**
+     * @param string $url
+     *
+     * @return \Spatie\Sitemap\Tags\Url|null
+     */
     public function getUrl(string $url): ?Url
     {
         return collect($this->tags)->first(function (Tag $tag) use ($url) {
